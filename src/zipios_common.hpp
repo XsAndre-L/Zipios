@@ -32,14 +32,18 @@
 
 #include "zipios/zipios-config.hpp"
 
-#include <vector>
-#include <sstream>
 #include <cstdint>
+#include <sstream>
+#include <vector>
 
-#if defined( ZIPIOS_WINDOWS )
-typedef int32_t ssize_t;
+// #if defined( ZIPIOS_WINDOWS )
+// typedef int32_t ssize_t;
+// #endif
+
+#if defined(_WIN32) && defined(_MSC_VER) && !defined(__MINGW32__)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 #endif
-
 
 /** \brief Concatenate two vectors together.
  *
@@ -71,53 +75,46 @@ typedef int32_t ssize_t;
  * \param[in,out] v1  The vector which receives a copy of v2.
  * \param[in]  v2  The vector to concatenate at the end of v1.
  */
-template<class Type>
-void operator += (std::vector<Type> & v1, std::vector<Type> const & v2)
-{
-    // make sure these are not the same vector or the insert()
-    // is not unlikely to fail badly; it is expected that the
-    // user does not try to duplicate an array...
-    if(&v1 != &v2)
-    {
-        v1.reserve(v1.size() + v2.size());
-        v1.insert(v1.end(), v2.begin(), v2.end());
-    }
+template <class Type>
+void operator+=(std::vector<Type> &v1, std::vector<Type> const &v2) {
+  // make sure these are not the same vector or the insert()
+  // is not unlikely to fail badly; it is expected that the
+  // user does not try to duplicate an array...
+  if (&v1 != &v2) {
+    v1.reserve(v1.size() + v2.size());
+    v1.insert(v1.end(), v2.begin(), v2.end());
+  }
 }
 
-
-namespace zipios
-{
-
+namespace zipios {
 
 extern char const g_separator;
 
-
 typedef std::ostringstream OutputStringStream;
 
+typedef std::vector<unsigned char> buffer_t;
 
-typedef std::vector<unsigned char>      buffer_t;
+void zipRead(std::istream &is, uint32_t &value);
+void zipRead(std::istream &is, uint16_t &value);
+void zipRead(std::istream &is, uint8_t &value);
+void zipRead(std::istream &is, buffer_t &buffer, ssize_t const count);
+void zipRead(std::istream &is, std::string &str, ssize_t const count);
 
+void zipRead(buffer_t const &is, size_t &pos, uint32_t &value);
+void zipRead(buffer_t const &is, size_t &pos, uint16_t &value);
+void zipRead(buffer_t const &is, size_t &pos, uint8_t &value);
+void zipRead(buffer_t const &is, size_t &pos, buffer_t &buffer,
+             ssize_t const count);
+void zipRead(buffer_t const &is, size_t &pos, std::string &str,
+             ssize_t const count);
 
-void     zipRead(std::istream & is, uint32_t & value);
-void     zipRead(std::istream & is, uint16_t & value);
-void     zipRead(std::istream & is, uint8_t &  value);
-void     zipRead(std::istream & is, buffer_t & buffer, ssize_t const count);
-void     zipRead(std::istream & is, std::string & str, ssize_t const count);
+void zipWrite(std::ostream &os, uint32_t const &value);
+void zipWrite(std::ostream &os, uint16_t const &value);
+void zipWrite(std::ostream &os, uint8_t const &value);
+void zipWrite(std::ostream &os, buffer_t const &buffer);
+void zipWrite(std::ostream &os, std::string const &str);
 
-void     zipRead(buffer_t const & is, size_t & pos, uint32_t & value);
-void     zipRead(buffer_t const & is, size_t & pos, uint16_t & value);
-void     zipRead(buffer_t const & is, size_t & pos, uint8_t &  value);
-void     zipRead(buffer_t const & is, size_t & pos, buffer_t & buffer, ssize_t const count);
-void     zipRead(buffer_t const & is, size_t & pos, std::string & str, ssize_t const count);
-
-void     zipWrite(std::ostream & os, uint32_t const & value);
-void     zipWrite(std::ostream & os, uint16_t const & value);
-void     zipWrite(std::ostream & os, uint8_t const &  value);
-void     zipWrite(std::ostream & os, buffer_t const & buffer);
-void     zipWrite(std::ostream & os, std::string const & str);
-
-
-} // zipios namespace
+} // namespace zipios
 
 // Local Variables:
 // mode: cpp

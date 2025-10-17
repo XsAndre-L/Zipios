@@ -29,56 +29,50 @@
  * whatever that is at the time you create the file. The get/set Unix
  * timestamp functions adjust the date to UTC as required.
  *
- * \sa https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-dosdatetimetofiletime
+ * \sa
+ * https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-dosdatetimetofiletime
  */
 
 #include "zipios/dosdatetime.hpp"
 
 #include "zipios/zipiosexceptions.hpp"
 
+namespace zipios {
 
-namespace zipios
-{
-
-
-DOSDateTime::dosdatetime_t const  DOSDateTime::g_min_dosdatetime;     // Jan  1, 1980  00:00:00
-DOSDateTime::dosdatetime_t const  DOSDateTime::g_max_dosdatetime;     // Dec 31, 2107  23:59:59
-
-
-
+DOSDateTime::dosdatetime_t const
+    DOSDateTime::g_min_dosdatetime; // Jan  1, 1980  00:00:00
+DOSDateTime::dosdatetime_t const
+    DOSDateTime::g_max_dosdatetime; // Dec 31, 2107  23:59:59
 
 /** \brief Union used to convert the uint32_t to fields and vice versa.
  *
  * This union is used by the functions below to convert the basic
  * uint32_t dosdatetime_t values in a list of 6 fields.
  */
-union dosdatetime_convert_t
-{
-    DOSDateTime::dosdatetime_t      m_dosdatetime;
-    struct fields
-    {
+union dosdatetime_convert_t {
+  DOSDateTime::dosdatetime_t m_dosdatetime;
+  struct fields {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-        DOSDateTime::dosdatetime_t      m_year   : 7;  // add 1980
-        DOSDateTime::dosdatetime_t      m_month  : 4;  // 1 to 12
-        DOSDateTime::dosdatetime_t      m_mday   : 5;  // 1 to 31
-        DOSDateTime::dosdatetime_t      m_hour   : 5;
-        DOSDateTime::dosdatetime_t      m_minute : 6;
-        DOSDateTime::dosdatetime_t      m_second : 5;   // WARNING: the precision is every 2 seconds (0, 2, 4, etc.)
+    DOSDateTime::dosdatetime_t m_year : 7;  // add 1980
+    DOSDateTime::dosdatetime_t m_month : 4; // 1 to 12
+    DOSDateTime::dosdatetime_t m_mday : 5;  // 1 to 31
+    DOSDateTime::dosdatetime_t m_hour : 5;
+    DOSDateTime::dosdatetime_t m_minute : 6;
+    DOSDateTime::dosdatetime_t m_second : 5; // WARNING: the precision is every
+                                             // 2 seconds (0, 2, 4, etc.)
 #else
-        DOSDateTime::dosdatetime_t      m_second : 5;   // WARNING: the precision is every 2 seconds (0, 2, 4, etc.)
-        DOSDateTime::dosdatetime_t      m_minute : 6;
-        DOSDateTime::dosdatetime_t      m_hour   : 5;
-        DOSDateTime::dosdatetime_t      m_mday   : 5;  // 1 to 31
-        DOSDateTime::dosdatetime_t      m_month  : 4;  // 1 to 12
-        DOSDateTime::dosdatetime_t      m_year   : 7;  // add 1980
+    DOSDateTime::dosdatetime_t m_second : 5; // WARNING: the precision is every
+                                             // 2 seconds (0, 2, 4, etc.)
+    DOSDateTime::dosdatetime_t m_minute : 6;
+    DOSDateTime::dosdatetime_t m_hour : 5;
+    DOSDateTime::dosdatetime_t m_mday : 5;  // 1 to 31
+    DOSDateTime::dosdatetime_t m_month : 4; // 1 to 12
+    DOSDateTime::dosdatetime_t m_year : 7;  // add 1980
 #endif
-    } m_fields;
+  } m_fields;
 };
 
-
-
-namespace
-{
+namespace {
 
 /** \brief Number of days in a month.
  *
@@ -86,40 +80,34 @@ namespace
  * of days in the month. It is ignored if the month is February.
  */
 int const g_days_in_month[12] = {
-    /* Jan */   31,
-    /* Feb */   0, // special handling
-    /* Mar */   31,
-    /* Apr */   30,
-    /* May */   31,
-    /* Jun */   30,
-    /* Jul */   31,
-    /* Aug */   31,
-    /* Sep */   30,
-    /* Oct */   31,
-    /* Nov */   30,
-    /* Dec */   31
-};
-
+    /* Jan */ 31,
+    /* Feb */ 0, // special handling
+    /* Mar */ 31,
+    /* Apr */ 30,
+    /* May */ 31,
+    /* Jun */ 30,
+    /* Jul */ 31,
+    /* Aug */ 31,
+    /* Sep */ 30,
+    /* Oct */ 31,
+    /* Nov */ 30,
+    /* Dec */ 31};
 
 int const g_ydays[12] = {
-    /* Jan */   0,
-    /* Feb */   31,
-    /* Mar */   31 + 0, // special handling
-    /* Apr */   31 + 0 + 31,
-    /* May */   31 + 0 + 31 + 30,
-    /* Jun */   31 + 0 + 31 + 30 + 31,
-    /* Jul */   31 + 0 + 31 + 30 + 31 + 30,
-    /* Aug */   31 + 0 + 31 + 30 + 31 + 30 + 31,
-    /* Sep */   31 + 0 + 31 + 30 + 31 + 30 + 31 + 31,
-    /* Oct */   31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
-    /* Nov */   31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
-    /* Dec */   31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
-};
+    /* Jan */ 0,
+    /* Feb */ 31,
+    /* Mar */ 31 + 0, // special handling
+    /* Apr */ 31 + 0 + 31,
+    /* May */ 31 + 0 + 31 + 30,
+    /* Jun */ 31 + 0 + 31 + 30 + 31,
+    /* Jul */ 31 + 0 + 31 + 30 + 31 + 30,
+    /* Aug */ 31 + 0 + 31 + 30 + 31 + 30 + 31,
+    /* Sep */ 31 + 0 + 31 + 30 + 31 + 30 + 31 + 31,
+    /* Oct */ 31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+    /* Nov */ 31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
+    /* Dec */ 31 + 0 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30};
 
-
-}
-
-
+} // namespace
 
 /** \brief Check whether this DOS Date & Date is valid.
  *
@@ -141,19 +129,15 @@ int const g_ydays[12] = {
  *
  * \sa daysInMonth()
  */
-bool DOSDateTime::isValid() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_second < 30  // remember we only keep `sec / 2` in a DOS time field
-        && conv.m_fields.m_minute < 60
-        && conv.m_fields.m_hour < 24
-        && conv.m_fields.m_mday > 0
-        && conv.m_fields.m_mday <= daysInMonth()
-        && conv.m_fields.m_month > 0
-        && conv.m_fields.m_month < 13;
+bool DOSDateTime::isValid() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_second <
+             30 // remember we only keep `sec / 2` in a DOS time field
+         && conv.m_fields.m_minute < 60 && conv.m_fields.m_hour < 24 &&
+         conv.m_fields.m_mday > 0 && conv.m_fields.m_mday <= daysInMonth() &&
+         conv.m_fields.m_month > 0 && conv.m_fields.m_month < 13;
 }
-
 
 /** \brief Calculate the number of days in this date's month.
  *
@@ -175,35 +159,26 @@ bool DOSDateTime::isValid() const
  *
  * \sa isValid()
  */
-int DOSDateTime::daysInMonth() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
+int DOSDateTime::daysInMonth() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
 
-    if(conv.m_fields.m_month == 0
-    || conv.m_fields.m_month > 12)
-    {
-        return -1;
-    }
+  if (conv.m_fields.m_month == 0 || conv.m_fields.m_month > 12) {
+    return -1;
+  }
 
-    if(conv.m_fields.m_month == 2)
-    {
-        // Feb. depends on the year
-        //
-        int year = conv.m_fields.m_year + 1980;
+  if (conv.m_fields.m_month == 2) {
+    // Feb. depends on the year
+    //
+    int year = conv.m_fields.m_year + 1980;
 
-        return ((year) % 400) == 0
-                    ? 29
-                    : (((year) % 100) == 0
-                        ? 28
-                        : (((year) % 4) == 0
-                            ? 29
-                            : 28));
-    }
+    return ((year) % 400) == 0
+               ? 29
+               : (((year) % 100) == 0 ? 28 : (((year) % 4) == 0 ? 29 : 28));
+  }
 
-    return g_days_in_month[conv.m_fields.m_month - 1];
+  return g_days_in_month[conv.m_fields.m_month - 1];
 }
-
 
 /** \brief Get the second.
  *
@@ -219,13 +194,11 @@ int DOSDateTime::daysInMonth() const
  *
  * \return The second this DOS Date & Time represents.
  */
-int DOSDateTime::getSecond() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_second * 2;
+int DOSDateTime::getSecond() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_second * 2;
 }
-
 
 /** \brief Get the minute.
  *
@@ -235,13 +208,11 @@ int DOSDateTime::getSecond() const
  *
  * \return The minute this DOS Date & Time represents.
  */
-int DOSDateTime::getMinute() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_minute;
+int DOSDateTime::getMinute() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_minute;
 }
-
 
 /** \brief Get the hour.
  *
@@ -251,13 +222,11 @@ int DOSDateTime::getMinute() const
  *
  * \return The hour this DOS Date & Time represents.
  */
-int DOSDateTime::getHour() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_hour;
+int DOSDateTime::getHour() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_hour;
 }
-
 
 /** \brief Get the day of the month.
  *
@@ -269,13 +238,11 @@ int DOSDateTime::getHour() const
  *
  * \return The day of the month this DOS Date & Time represents.
  */
-int DOSDateTime::getMDay() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_mday;
+int DOSDateTime::getMDay() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_mday;
 }
-
 
 /** \brief Get the month.
  *
@@ -285,13 +252,11 @@ int DOSDateTime::getMDay() const
  *
  * \return The month this DOS Date & Time represents.
  */
-int DOSDateTime::getMonth() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_month;
+int DOSDateTime::getMonth() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_month;
 }
-
 
 /** \brief Get the year.
  *
@@ -301,13 +266,11 @@ int DOSDateTime::getMonth() const
  *
  * \return The year this DOS Date & Time represents.
  */
-int DOSDateTime::getYear() const
-{
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    return conv.m_fields.m_year + 1980;
+int DOSDateTime::getYear() const {
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  return conv.m_fields.m_year + 1980;
 }
-
 
 /** \brief Set the second.
  *
@@ -331,20 +294,17 @@ int DOSDateTime::getYear() const
  *
  * \param[in] second  The new DOSDateTime number of seconds.
  */
-void DOSDateTime::setSecond(int second)
-{
-    if(second < 0
-    || second > 59)
-    {
-        throw InvalidException("Second is out of range for an MS-DOS Date & Time object. Range is [0, 59].");
-    }
+void DOSDateTime::setSecond(int second) {
+  if (second < 0 || second > 59) {
+    throw InvalidException("Second is out of range for an MS-DOS Date & Time "
+                           "object. Range is [0, 59].");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_second = second / 2;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_second = second / 2;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Set the minute.
  *
@@ -356,20 +316,17 @@ void DOSDateTime::setSecond(int second)
  *
  * \param[in] minute  The new DOSDateTime number of minutes.
  */
-void DOSDateTime::setMinute(int minute)
-{
-    if(minute < 0
-    || minute > 59)
-    {
-        throw InvalidException("Minute is out of range for an MS-DOS Date & Time object. Range is [0, 59].");
-    }
+void DOSDateTime::setMinute(int minute) {
+  if (minute < 0 || minute > 59) {
+    throw InvalidException("Minute is out of range for an MS-DOS Date & Time "
+                           "object. Range is [0, 59].");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_minute = minute;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_minute = minute;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Set the hour.
  *
@@ -381,20 +338,17 @@ void DOSDateTime::setMinute(int minute)
  *
  * \param[in] hour  The new DOSDateTime number of hours.
  */
-void DOSDateTime::setHour(int hour)
-{
-    if(hour < 0
-    || hour > 23)
-    {
-        throw InvalidException("Hour is out of range for an MS-DOS Date & Time object. Range is [0, 23].");
-    }
+void DOSDateTime::setHour(int hour) {
+  if (hour < 0 || hour > 23) {
+    throw InvalidException("Hour is out of range for an MS-DOS Date & Time "
+                           "object. Range is [0, 23].");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_hour = hour;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_hour = hour;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Set the day of the month.
  *
@@ -411,20 +365,17 @@ void DOSDateTime::setHour(int hour)
  *
  * \param[in] mday  The new DOSDateTime day of the month.
  */
-void DOSDateTime::setMDay(int mday)
-{
-    if(mday < 1
-    || mday > 31)
-    {
-        throw InvalidException("Day of the month is out of range for an MS-DOS Date & Time object. Range is [1, 31].");
-    }
+void DOSDateTime::setMDay(int mday) {
+  if (mday < 1 || mday > 31) {
+    throw InvalidException("Day of the month is out of range for an MS-DOS "
+                           "Date & Time object. Range is [1, 31].");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_mday = mday;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_mday = mday;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Set the month.
  *
@@ -435,20 +386,17 @@ void DOSDateTime::setMDay(int mday)
  *
  * \param[in] month  The new DOSDateTime month.
  */
-void DOSDateTime::setMonth(int month)
-{
-    if(month < 1
-    || month > 12)
-    {
-        throw InvalidException("Month out of range for an MS-DOS Date & Time object. Range is [1, 12].");
-    }
+void DOSDateTime::setMonth(int month) {
+  if (month < 1 || month > 12) {
+    throw InvalidException("Month out of range for an MS-DOS Date & Time "
+                           "object. Range is [1, 12].");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_month = month;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_month = month;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Set the year.
  *
@@ -459,20 +407,17 @@ void DOSDateTime::setMonth(int month)
  * The year is limited between 1980 and 2107. This exception is raised if the
  * year to out of this range.
  */
-void DOSDateTime::setYear(int year)
-{
-    if(year < 1980
-    || year > 2107)
-    {
-        throw InvalidException("Year out of range for an MS-DOS Date & Time object. Range is [1980, 2107] (1).");
-    }
+void DOSDateTime::setYear(int year) {
+  if (year < 1980 || year > 2107) {
+    throw InvalidException("Year out of range for an MS-DOS Date & Time "
+                           "object. Range is [1980, 2107] (1).");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_dosdatetime = m_dosdatetime;
-    conv.m_fields.m_year = year - 1980;
-    m_dosdatetime = conv.m_dosdatetime;
+  dosdatetime_convert_t conv;
+  conv.m_dosdatetime = m_dosdatetime;
+  conv.m_fields.m_year = year - 1980;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Retrieve the DOSDateTime value as is.
  *
@@ -481,11 +426,9 @@ void DOSDateTime::setYear(int year)
  *
  * \return The dosdatetime_t timestamp.
  */
-DOSDateTime::dosdatetime_t DOSDateTime::getDOSDateTime() const
-{
-    return m_dosdatetime;
+DOSDateTime::dosdatetime_t DOSDateTime::getDOSDateTime() const {
+  return m_dosdatetime;
 }
-
 
 /** \brief Set the DOSDateTime value as is.
  *
@@ -495,11 +438,9 @@ DOSDateTime::dosdatetime_t DOSDateTime::getDOSDateTime() const
  *
  * \param[in] datetime  The DOS Date & Time value.
  */
-void DOSDateTime::setDOSDateTime(dosdatetime_t datetime)
-{
-    m_dosdatetime = datetime;
+void DOSDateTime::setDOSDateTime(dosdatetime_t datetime) {
+  m_dosdatetime = datetime;
 }
-
 
 /** \brief Set the DOSDateTime value from a Unix timestamp.
  *
@@ -542,42 +483,42 @@ void DOSDateTime::setDOSDateTime(dosdatetime_t datetime)
  *
  * \param[in] unix_timestamp  The time and stamp in Unix format.
  */
-void DOSDateTime::setUnixTimestamp(std::time_t unix_timestamp)
-{
-    // round up to the next second
-    //
-    unix_timestamp += 1;
-    unix_timestamp &= ~1;
+void DOSDateTime::setUnixTimestamp(std::time_t unix_timestamp) {
+  // round up to the next second
+  //
+  unix_timestamp += 1;
+  unix_timestamp &= ~1;
 
-    struct tm t;
-#ifdef ZIPIOS_WINDOWS
-    localtime_s(&t, &unix_timestamp);
+  struct tm t;
+// #ifdef ZIPIOS_WINDOWS
+#ifdef _WIN32
+  localtime_s(&t, &unix_timestamp);
 #else
-    localtime_r(&unix_timestamp, &t);
+  localtime_r(&unix_timestamp, &t);
 #endif
 
-//std::cout << "test with: " << unix_timestamp << " -- " << t.tm_year
-//          << " (" << (t.tm_year < 1980 - 1900 ? 1 : 0)
-//          << ", " << (t.tm_year > 2107 - 1900 ? 1 : 0)
-//          << ")\n";
+  // std::cout << "test with: " << unix_timestamp << " -- " << t.tm_year
+  //           << " (" << (t.tm_year < 1980 - 1900 ? 1 : 0)
+  //           << ", " << (t.tm_year > 2107 - 1900 ? 1 : 0)
+  //           << ")\n";
 
-    if(t.tm_year < 1980 - 1900
-    || t.tm_year > 2107 - 1900)
-    {
-        throw InvalidException("Year out of range for an MS-DOS Date & Time object. Range is [1980, 2107] (2).");
-    }
+  if (t.tm_year < 1980 - 1900 || t.tm_year > 2107 - 1900) {
+    throw InvalidException("Year out of range for an MS-DOS Date & Time "
+                           "object. Range is [1980, 2107] (2).");
+  }
 
-    dosdatetime_convert_t conv;
-    conv.m_fields.m_second = t.tm_sec / 2; // already rounded up to the next second, so just divide by 2 is enough here
-    conv.m_fields.m_minute = t.tm_min;
-    conv.m_fields.m_hour   = t.tm_hour;
-    conv.m_fields.m_mday   = t.tm_mday;
-    conv.m_fields.m_month  = t.tm_mon + 1;
-    conv.m_fields.m_year   = t.tm_year + 1900 - 1980;
+  dosdatetime_convert_t conv;
+  conv.m_fields.m_second =
+      t.tm_sec / 2; // already rounded up to the next second, so just divide by
+                    // 2 is enough here
+  conv.m_fields.m_minute = t.tm_min;
+  conv.m_fields.m_hour = t.tm_hour;
+  conv.m_fields.m_mday = t.tm_mday;
+  conv.m_fields.m_month = t.tm_mon + 1;
+  conv.m_fields.m_year = t.tm_year + 1900 - 1980;
 
-    m_dosdatetime = conv.m_dosdatetime;
+  m_dosdatetime = conv.m_dosdatetime;
 }
-
 
 /** \brief Retrieve the DOSDateTime as a Unix timestamp.
  *
@@ -595,80 +536,77 @@ void DOSDateTime::setUnixTimestamp(std::time_t unix_timestamp)
  *
  * \sa setUnixTimestamp()
  */
-std::time_t DOSDateTime::getUnixTimestamp() const
-{
-    if(isValid())
-    {
-        dosdatetime_convert_t conv;
-        conv.m_dosdatetime = m_dosdatetime;
+std::time_t DOSDateTime::getUnixTimestamp() const {
+  if (isValid()) {
+    dosdatetime_convert_t conv;
+    conv.m_dosdatetime = m_dosdatetime;
 
-        struct tm t;
-        t.tm_sec   = conv.m_fields.m_second * 2;      // we lost the bottom bit, nothing we can do about it here
-        t.tm_min   = conv.m_fields.m_minute;
-        t.tm_hour  = conv.m_fields.m_hour;
-        t.tm_mday  = conv.m_fields.m_mday;
-        t.tm_mon   = conv.m_fields.m_month - 1;
-        t.tm_year  = conv.m_fields.m_year + 1980 - 1900;
-        t.tm_wday  = 0;
-        t.tm_yday  = 0;
-        t.tm_isdst = -1;
+    struct tm t;
+    t.tm_sec = conv.m_fields.m_second *
+               2; // we lost the bottom bit, nothing we can do about it here
+    t.tm_min = conv.m_fields.m_minute;
+    t.tm_hour = conv.m_fields.m_hour;
+    t.tm_mday = conv.m_fields.m_mday;
+    t.tm_mon = conv.m_fields.m_month - 1;
+    t.tm_year = conv.m_fields.m_year + 1980 - 1900;
+    t.tm_wday = 0;
+    t.tm_yday = 0;
+    t.tm_isdst = -1;
 
-//std::cerr << "date to Unix timestamp: " << (t.tm_mon + 1) << " " << t.tm_mday << ", " << (t.tm_year + 1900)
-//                                 << " " << t.tm_hour << ":" << t.tm_min << ":" << t.tm_sec << "\n";
+    // std::cerr << "date to Unix timestamp: " << (t.tm_mon + 1) << " " <<
+    // t.tm_mday << ", " << (t.tm_year + 1900)
+    //                                  << " " << t.tm_hour << ":" << t.tm_min
+    //                                  << ":" << t.tm_sec << "\n";
 
-        if(sizeof(std::time_t) == 4
-        && t.tm_year >= 2038)
-        {
-            // the exact date is Jan 19, 2038 at 03:13:07 UTC
-            // see https://en.wikipedia.org/wiki/Year_2038_problem
-            //
-            // we have no problem with 64 bits, max. year is about 292,000,000,000
-            // although the tm_year is an int, so really we're limited to 2 billion
-            // years, again just fine for a DOS Date is limited to 2107...
-            //
-            throw InvalidException("Year out of range for a 32 bit Unix Timestamp object. Range is (1901, 2038).");
-        }
-
-        // the zip file format expects dates in local time, not UTC
-        // so I use mktime() directly
-        //
-        return mktime(&t);
-
-//        // mktime() makes use of the timezone, here is some code that
-//        // replaces mktime() with a UTC date conversion
-//        //
-//        time_t const year = t.tm_year + 1900;
-//        time_t timestamp = (year - 1970LL) * 31536000LL
-//                         + ((year - 1969LL) / 4LL) * 86400LL
-//                         - ((year - 1901LL) / 100LL) * 86400LL
-//                         + ((year - 1601LL) / 400LL) * 86400LL
-//                         + (t.tm_mday + g_ydays[t.tm_mon] - 1) * 86400LL
-//                         + t.tm_hour * 3600LL
-//                         + t.tm_min * 60LL
-//                         + t.tm_sec * 1LL;
-//        if(t.tm_mon >= 2)
-//        {
-//            // add seconds in February
-//            //
-//            timestamp += (year % 400 == 0
-//                        ? 29                    // for year 2000
-//                        : (year % 100 == 0
-//                            ? 28                // for year 2100
-//                            : (year % 4 == 0
-//                                ? 29
-//                                : 28))) * 86400LL;
-//        }
-//
-//        return timestamp;
+    if (sizeof(std::time_t) == 4 && t.tm_year >= 2038) {
+      // the exact date is Jan 19, 2038 at 03:13:07 UTC
+      // see https://en.wikipedia.org/wiki/Year_2038_problem
+      //
+      // we have no problem with 64 bits, max. year is about 292,000,000,000
+      // although the tm_year is an int, so really we're limited to 2 billion
+      // years, again just fine for a DOS Date is limited to 2107...
+      //
+      throw InvalidException("Year out of range for a 32 bit Unix Timestamp "
+                             "object. Range is (1901, 2038).");
     }
 
-    return 0;
+    // the zip file format expects dates in local time, not UTC
+    // so I use mktime() directly
+    //
+    return mktime(&t);
+
+    //        // mktime() makes use of the timezone, here is some code that
+    //        // replaces mktime() with a UTC date conversion
+    //        //
+    //        time_t const year = t.tm_year + 1900;
+    //        time_t timestamp = (year - 1970LL) * 31536000LL
+    //                         + ((year - 1969LL) / 4LL) * 86400LL
+    //                         - ((year - 1901LL) / 100LL) * 86400LL
+    //                         + ((year - 1601LL) / 400LL) * 86400LL
+    //                         + (t.tm_mday + g_ydays[t.tm_mon] - 1) * 86400LL
+    //                         + t.tm_hour * 3600LL
+    //                         + t.tm_min * 60LL
+    //                         + t.tm_sec * 1LL;
+    //        if(t.tm_mon >= 2)
+    //        {
+    //            // add seconds in February
+    //            //
+    //            timestamp += (year % 400 == 0
+    //                        ? 29                    // for year 2000
+    //                        : (year % 100 == 0
+    //                            ? 28                // for year 2100
+    //                            : (year % 4 == 0
+    //                                ? 29
+    //                                : 28))) * 86400LL;
+    //        }
+    //
+    //        return timestamp;
+  }
+
+  return 0;
 }
 
-
-
-
-} // zipios namespace
+} // namespace zipios
 
 // Local Variables:
 // mode: cpp
