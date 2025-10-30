@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 import { argv } from "node:process";
 
 export const build = (cwd: string = process.cwd()): BuildType => {
+  const TOOLCHAINS = resolve(cwd, "../../toolchains/cmake-tools");
   const LINUX = resolve(cwd, "../../toolchains/linux");
   const toolchain_clang = resolve(cwd, "../../toolchains/dependencies/clang");
   const CLANG = join(toolchain_clang, "bin/clang.exe").replace(/\\/g, "/");
@@ -79,7 +80,7 @@ export const build = (cwd: string = process.cwd()): BuildType => {
     },
     linux_x86_64: {
       configStep: `cmake -S . -B build/linux/x86_64 -G Ninja \
-      -DCMAKE_TOOLCHAIN_FILE=${LINUX}/linux_x86-64.cmake \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAINS}/linux_x86-64.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=OFF \
       -DBUILD_TOOLS=OFF \
@@ -104,7 +105,7 @@ export const build = (cwd: string = process.cwd()): BuildType => {
     },
     linux_aarch64: {
       configStep: `cmake -S . -B build/linux/aarch64 -G Ninja \
-      -DCMAKE_TOOLCHAIN_FILE=${LINUX}/linux_aarch64.cmake \
+      -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAINS}/linux_aarch64.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=OFF \
       -DBUILD_TOOLS=OFF \
