@@ -1,9 +1,3 @@
-// import {
-//   BuildType,
-//   OUTPUT_DIR,
-// } from "../../../../src/core/types/package-config.ts";
-// import { runPackageAction } from "../../../../src/commands/packages.ts";
-
 import {
   BuildType,
   CPP_OUTPUT_DIR,
@@ -18,9 +12,6 @@ import { join } from "node:path";
 import { argv } from "node:process";
 
 export const build = (cwd: string = process.cwd()): BuildType => {
-  const { windows_x86_64, windows_aarch64, linux_x86_64, linux_aarch64 } =
-    SYSROOT;
-
   const HOST_SYSROOT = getHostSysrootPath();
   const CLANG = join(HOST_SYSROOT, "bin/clang.exe").replace(/\\/g, "/");
   const CLANGXX = join(HOST_SYSROOT, "bin/clang++.exe").replace(/\\/g, "/");
